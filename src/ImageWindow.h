@@ -6,8 +6,10 @@
 
 #include <QMainWindow>
 #include <QImage>
+#include <QAbstractButton>
 
 class QLabel;
+class QGroupBox;
 
 class ImageWindow : public QMainWindow
 {
@@ -17,17 +19,17 @@ public:
 
 	explicit ImageWindow(QWidget* parent = nullptr);
 
+	QAbstractButton* addFilter(const QString& name);
+
 public slots:
 
 	void setImage(const QImage& image);
 
 private:
 
-	QImage m_imageSource;
-	QImage m_imageResult;
 	QLabel* m_imageView;
+	QGroupBox* m_filters;
 
 	QWidget* createSideBar();
 	QWidget* createImageView();
-
 };

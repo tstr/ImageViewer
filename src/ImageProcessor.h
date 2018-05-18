@@ -6,18 +6,16 @@
 
 #include <QImage>
 
+using Kernel3x3 = int[3][3];
+using Kernel5x5 = int[5][5];
+
 class ImageProcessor : public QObject
 {
 	Q_OBJECT
 
-private:
-	
-	QImage m_a;
-	QImage m_b;
-
 public:
 
-	ImageProcessor() {}
+	explicit ImageProcessor(QObject* parent = nullptr) : QObject(parent) {}
 
 	/*
 		Apply a function to every pixel of an image:
@@ -43,18 +41,26 @@ public:
 		imageUpdated(m_a);
 	}
 
-	void load(const QString& fileName)
-	{
-		m_a = QImage(fileName);									//source image
-		m_b = QImage(m_a.width(), m_a.height(), m_a.format());  //destination image
+	/*
+		Apply a filter kernel to the image
+	*/
+	void filter(const Kernel3x3& kernel);
 
-		imageUpdated(m_a);
-	}
+	void load(const QImage& img);
 
 	const QImage& image() const { return m_a; }
+
+public slots:
+
+	void resetImage();
 
 signals:
 
 	void imageUpdated(const QImage& img);
 
+private:
+
+	QImage m_src;
+	QImage m_a;
+	QImage m_b;
 };

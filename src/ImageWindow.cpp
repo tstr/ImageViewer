@@ -4,8 +4,9 @@
 
 #include <QLabel>
 #include <QHBoxLayout>
-#include <QDockWidget>
+#include <QFormLayout>
 #include <QGroupBox>
+#include <QRadioButton>
 
 #include "ImageWindow.h"
 
@@ -23,12 +24,13 @@ ImageWindow::ImageWindow(QWidget* parent) :
 
 QWidget* ImageWindow::createSideBar()
 {
-	QGroupBox* ctrlArea = new QGroupBox("Options:", this);
-	//ctrlArea->setLayout(ctrlLayout);
-	ctrlArea->setMaximumWidth(200);
-	ctrlArea->setMinimumWidth(100);
+	m_filters = new QGroupBox("Filters:", this);
+	m_filters->setLayout(new QFormLayout(m_filters));
+	m_filters->setMaximumWidth(200);
+	m_filters->setMinimumWidth(100);
+	m_filters->setAlignment(Qt::AlignTop);
 
-	return ctrlArea;
+	return m_filters;
 }
 
 QWidget* ImageWindow::createImageView()
@@ -43,6 +45,13 @@ QWidget* ImageWindow::createImageView()
 void ImageWindow::setImage(const QImage& image)
 {
 	m_imageView->setPixmap(QPixmap::fromImage(image));
+}
+
+QAbstractButton* ImageWindow::addFilter(const QString& name)
+{
+	QAbstractButton* toggle = new QRadioButton(name, m_filters);
+	m_filters->layout()->addWidget(toggle);
+	return toggle;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
