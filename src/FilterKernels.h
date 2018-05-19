@@ -44,6 +44,12 @@ namespace filters
 		1, 0, -1
 	};
 
+	const Kernel<3, 3> edges2 = {
+		-1, -1, -1,
+		-1, 8, -1,
+		-1, -1, -1,
+	};
+
 	const Kernel<3, 3> gaussian3 = {
 		1, 2, 1,
 		2, 4, 2,
@@ -59,8 +65,14 @@ namespace filters
 	};
 
 	const Kernel<3, 3> sharpen = {
-		-1, -1, -1,
-		-1,  8, -1,
-		-1, -1, -1
+		 0, -1,  0,
+		-1,  5, -1,
+		 0, -1,  0
+	};
+
+	const Kernel<3, 3> emboss = {
+		+1, 0, 0,
+		 0, 0, 0,
+		 0, 0, -1,
 	};
 }
