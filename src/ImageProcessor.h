@@ -6,8 +6,7 @@
 
 #include <QImage>
 
-using Kernel3x3 = int[3][3];
-using Kernel5x5 = int[5][5];
+#include "FilterKernels.h"
 
 class ImageProcessor : public QObject
 {
@@ -44,7 +43,11 @@ public:
 	/*
 		Apply a filter kernel to the image
 	*/
-	void filter(const Kernel3x3& kernel);
+	template<int n, int m>
+	void filter(const Kernel<n, m>& kernel)
+	{
+		this->filter(kernel.v, n, m);
+	}
 
 	void load(const QImage& img);
 
@@ -59,6 +62,8 @@ signals:
 	void imageUpdated(const QImage& img);
 
 private:
+
+	void filter(const int* kernel, int n, int m);
 
 	QImage m_src;
 	QImage m_a;

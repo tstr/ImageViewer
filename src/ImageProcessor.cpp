@@ -25,7 +25,7 @@ void ImageProcessor::resetImage()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ImageProcessor::filter(const Kernel3x3& kernel)
+void ImageProcessor::filter(const int* kernel, int n, int m)
 {
 	//Apply 3x3 filter kernel to the image
 	apply([&](auto img, auto coord) {
@@ -39,11 +39,11 @@ void ImageProcessor::filter(const Kernel3x3& kernel)
 			int factor = 0;
 
 			//Apply kernel
-			for (int x = 0; x < 3; x++)
+			for (int y = 0; y < m; y++)
 			{
-				for (int y = 0; y < 3; y++)
+				for (int x = 0; x < n; x++)
 				{
-					QPoint newcoord = coord + QPoint(x - 1, y - 1);
+					QPoint newcoord = coord + QPoint(x - (n >> 1), y - (m >> 1));
 
 					newcoord.setX(std::max(0, std::min(img.size().width() - 1, newcoord.x())));
 					newcoord.setY(std::max(0, std::min(img.size().height() - 1, newcoord.y())));
@@ -52,7 +52,7 @@ void ImageProcessor::filter(const Kernel3x3& kernel)
 					const QColor colour = img.pixel(newcoord);
 					const int channels[] = { colour.red(), colour.green(), colour.blue() };
 
-					const int weight = kernel[y][x];
+					const int weight = kernel[x + y*m];
 
 					accum += channels[c] * weight;
 					factor += weight;
