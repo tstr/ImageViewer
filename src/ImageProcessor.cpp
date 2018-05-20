@@ -23,6 +23,26 @@ void ImageProcessor::resetImage()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+ImageProcessor& ImageProcessor::apply(const PixelFunction& func)
+{
+	for (int i = 0; i < m_a.width(); i++)
+	{
+		for (int j = 0; j < m_a.height(); j++)
+		{
+			QPoint coord(i, j);
+
+			m_b.setPixel(coord, func((const QImage&)m_a, coord));;
+		}
+	}
+
+	//Swap image buffers
+	m_a.swap(m_b);
+
+	imageUpdated(QPixmap::fromImage(m_a));
+
+	return *this;
+}
+
 ImageProcessor& ImageProcessor::makeGrayscale()
 {
 	apply([](auto img, auto coord) {

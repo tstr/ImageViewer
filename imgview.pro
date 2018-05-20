@@ -5,8 +5,9 @@ SOURCES +=  src/Main.cpp \
 
 HEADERS +=  src/ImageWindow.h \
             src/ImageProcessor.h \
+            src/ImageWidget.h \
             src/FilterKernels.h \
-            src/ImageWidget.h
+            src/Utils.h
 
 CONFIG += qt
 QT += widgets
