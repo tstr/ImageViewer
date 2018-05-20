@@ -159,7 +159,7 @@ void ImageWindow::loadImage(const QString& imgName)
 	else
 	{
 		m_img.load(i);
-		QMainWindow::setWindowTitle("Image Edit -- " + QDir(imgName).absolutePath());
+		QMainWindow::setWindowTitle("Image Viewer -- " + QDir(imgName).absolutePath());
 	}
 }
 
