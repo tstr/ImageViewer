@@ -24,37 +24,18 @@
 ImageWindow::ImageWindow(QWidget* parent) :
 	QMainWindow(parent)
 {
-	setup();
-}
-
-void ImageWindow::setup()
-{
-	setAcceptDrops(true);
-
-	//Create widgets
+	//Setup widgets
 	this->setCentralWidget(createWidgets(this));
-	
 
-	QMenu* fileMenu = menuBar()->addMenu(tr("&File"));
-	
-	//const QIcon newIcon = QIcon::fromTheme("document-new", QIcon(":/images/new.png"));
-	QAction* saveAction = new QAction(tr("&Save"), this);
-	saveAction->setShortcuts(QKeySequence::SaveAs);
-	saveAction->setStatusTip("Save image");
-	connect(saveAction, &QAction::triggered, this, &ImageWindow::saveAs);
-	fileMenu->addAction(saveAction);
+	//Setup menu actions
+	createActions();
 
-	//const QIcon openIcon = QIcon::fromTheme("document-open", QIcon(":/images/open.png"));
-	QAction *openAction = new QAction(tr("&Open..."), this);
-	openAction->setShortcuts(QKeySequence::Open);
-	openAction->setStatusTip(tr("Open an image"));
-	connect(openAction, &QAction::triggered, this, &ImageWindow::open);
-	fileMenu->addAction(openAction);
-	//fileToolBar->addAction(openAct);
+	//Image update event
+	QObject::connect(&m_img, &ImageProcessor::imageUpdated, m_imageView, &QLabel::setPixmap);
 
-
-	//Setup events
-	QObject::connect(&m_img, &ImageProcessor::imageUpdated, this, &ImageWindow::setImage);
+	/*
+		Setup image operations
+	*/
 
 	QAbstractButton* none = new QRadioButton("none", m_filters);
 	m_filters->layout()->addWidget(none);
@@ -66,52 +47,24 @@ void ImageWindow::setup()
 	m_filters->layout()->addWidget(grey);
 
 	QObject::connect(grey, &QAbstractButton::toggled, [&](bool checked) {
-		if (checked) m_img.apply([](auto img, auto coord) {
-			QColor c = qGray(img.pixel(coord));
-			return qRgb(c.blue(), c.blue(), c.blue());
-		});
-		else
-			m_img.resetImage();
+		if (checked) m_img.makeGrayscale(); else m_img.resetImage();
 	});
 
 	//Filters
-	addFilter("gaussian 3x3", filters::gaussian3);
-	addFilter("gaussian 5x5", filters::gaussian5);
-	addFilter("edge (H)",     filters::edgesH);
-	addFilter("edge (V)",     filters::edgesV);
-	addFilter("edge 2",		  filters::edges2);
-	addFilter("sharpen",      filters::sharpen);
-	addFilter("emboss",	      filters::emboss);
+	addFilter("gaussian 3x3", kernels::gaussian3);
+	addFilter("gaussian 5x5", kernels::gaussian5);
+	addFilter("edge (H)",     kernels::edgesH);
+	addFilter("edge (V)",     kernels::edgesV);
+	addFilter("edge 2",       kernels::edges2);
+	addFilter("sharpen",      kernels::sharpen);
+	addFilter("emboss",       kernels::emboss);
 
 	//Nonlinear filter
 	QAbstractButton* nonlinear = new QRadioButton("non-linear", m_filters);
 	m_filters->layout()->addWidget(nonlinear);
 
 	QObject::connect(nonlinear, &QAbstractButton::toggled, [&](bool checked) {
-		if (checked)
-			m_img.apply([&](auto img, auto coord) {
-
-				int vs[9];
-				
-				for (int y = 0; y < 3; y++)
-				{
-					for (int x = 0; x < 3; x++)
-					{
-						QPoint newcoord = coord + QPoint(x - 1, y - 1);
-
-						newcoord.setX(std::max(0, std::min(img.size().width() - 1, newcoord.x())));
-						newcoord.setY(std::max(0, std::min(img.size().height() - 1, newcoord.y())));
-
-						//Read input image
-						vs[x + y*3] = img.pixel(newcoord);
-					}
-				}
-
-				std::sort(std::begin(vs), std::end(vs));
-				return vs[5];
-			});
-		else
-			m_img.resetImage();
+		if (checked) m_img.applyNonLinearFilter(); else m_img.resetImage();
 	});
 }
 
@@ -148,23 +101,34 @@ QWidget* ImageWindow::createImageView(QWidget* parent)
 	return m_imageView;
 }
 
+void ImageWindow::createActions()
+{
+	setAcceptDrops(true);
+
+	QMenu* fileMenu = menuBar()->addMenu(tr("&File"));
+
+	QAction* saveAction = new QAction(tr("&Save"), fileMenu);
+	saveAction->setShortcuts(QKeySequence::SaveAs);
+	saveAction->setStatusTip("Save image");
+	connect(saveAction, &QAction::triggered, this, &ImageWindow::saveAs);
+	fileMenu->addAction(saveAction);
+
+	QAction *openAction = new QAction(tr("&Open..."), fileMenu);
+	openAction->setShortcuts(QKeySequence::Open);
+	openAction->setStatusTip(tr("Open an image"));
+	connect(openAction, &QAction::triggered, this, &ImageWindow::open);
+	fileMenu->addAction(openAction);
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Operations
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-QAbstractButton* ImageWindow::addFilter(const QString& name, const Kernel<3, 3>& kernel)
+QAbstractButton* ImageWindow::addFilter(const QString& name, const KernelView& kernel)
 {
 	QAbstractButton* toggle = new QRadioButton(name, m_filters);
 	m_filters->layout()->addWidget(toggle);
-	QObject::connect(toggle, &QAbstractButton::toggled, [&](bool checked) { if (checked) m_img.filter(kernel); else m_img.resetImage(); });
-	return toggle;
-}
-
-QAbstractButton* ImageWindow::addFilter(const QString& name, const Kernel<5, 5>& kernel)
-{
-	QAbstractButton* toggle = new QRadioButton(name, m_filters);
-	m_filters->layout()->addWidget(toggle);
-	QObject::connect(toggle, &QAbstractButton::toggled, [&](bool checked) { if (checked) m_img.filter(kernel); else m_img.resetImage(); });
+	QObject::connect(toggle, &QAbstractButton::toggled, [this, kernel](bool checked) { if (checked) m_img.applyFilter(kernel); else m_img.resetImage(); });
 	return toggle;
 }
 
@@ -183,11 +147,6 @@ void ImageWindow::dropEvent(QDropEvent* event)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Slots
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void ImageWindow::setImage(const QImage& image)
-{
-	m_imageView->setPixmap(QPixmap::fromImage(image));
-}
 
 void ImageWindow::loadImage(const QString& imgName)
 {

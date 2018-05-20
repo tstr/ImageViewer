@@ -5,6 +5,7 @@
 #pragma once
 
 #include <QImage>
+#include <QPixmap>
 
 #include "FilterKernels.h"
 
@@ -16,13 +17,19 @@ public:
 
 	explicit ImageProcessor(QObject* parent = nullptr) : QObject(parent) {}
 
+	//Load the given image
+	void load(const QImage& img);
+
+	//Return the current image
+	const QImage& image() const { return m_a; }
+
 	/*
 		Apply a function to every pixel of an image:
 
 		uint func(const QImage&, const QPoint& coord)
 	*/
 	template<typename Function>
-	void apply(const Function& func)
+	ImageProcessor& apply(const Function& func)
 	{
 		for (int i = 0; i < m_a.width(); i++)
 		{
@@ -37,21 +44,25 @@ public:
 		//Swap image buffers
 		m_a.swap(m_b);
 
-		imageUpdated(m_a);
+		imageUpdated(QPixmap::fromImage(m_a));
+
+		return *this;
 	}
+
+	/*
+		Apply a gray scale filter
+	*/
+	ImageProcessor& makeGrayscale();
 
 	/*
 		Apply a filter kernel to the image
 	*/
-	template<int n, int m>
-	void filter(const Kernel<n, m>& kernel)
-	{
-		this->filter(kernel.v, n, m);
-	}
+	ImageProcessor& applyFilter(const KernelView& kernel);
 
-	void load(const QImage& img);
-
-	const QImage& image() const { return m_a; }
+	/*
+		Apply a non linear filter operation to the image
+	*/
+	ImageProcessor& applyNonLinearFilter();
 
 public slots:
 
@@ -59,11 +70,9 @@ public slots:
 
 signals:
 
-	void imageUpdated(const QImage& img);
+	void imageUpdated(const QPixmap& img);
 
 private:
-
-	void filter(const int* kernel, int n, int m);
 
 	QImage m_src;
 	QImage m_a;

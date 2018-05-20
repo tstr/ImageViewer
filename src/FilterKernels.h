@@ -7,24 +7,49 @@
 /*
 	A filter kernel is represented by an n*m matrix
 */
-template<size_t n, size_t m>
+template<uint n, uint m>
 struct Kernel
 {
 	static_assert(n % 2 == 1, "Kernel must have odd dimensions");
 	static_assert(m % 2 == 1, "Kernel must have odd dimensions");
 
 	int v[n * m];
+};
 
-	operator int*() const
+struct KernelView
+{
+	const int* v;
+	uint n;
+	uint m;
+
+	KernelView() :
+		v(nullptr), n(0), m(0)
+	{}
+
+	template<uint n, uint m>
+	KernelView(const Kernel<n, m>& k)
 	{
-		return v;
+		this->v = k.v;
+		this->n = n;
+		this->m = m;
+	}
+
+	KernelView(const KernelView& other) :
+		v(other.v),
+		n(other.n),
+		m(other.m)
+	{}
+
+	const int* operator[](size_t idx) const
+	{
+		return v + (m * idx);
 	}
 };
 
 /*
 	Common filters
 */
-namespace filters
+namespace kernels
 {
 	const Kernel<3,3> box = {
 		1, 1, 1,

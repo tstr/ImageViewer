@@ -21,8 +21,7 @@ public:
 
 	explicit ImageWindow(QWidget* parent = nullptr);
 
-	QAbstractButton* addFilter(const QString& name, const Kernel<3,3>& kernel);
-	QAbstractButton* addFilter(const QString& name, const Kernel<5,5>& kernel);
+	QAbstractButton* addFilter(const QString& name, const KernelView& kernel);
 
 	const ImageProcessor& imgproc() const { return m_img; }
 
@@ -33,7 +32,6 @@ public slots:
 
 private slots:
 
-	void setImage(const QImage& image);
 	void saveAs();
 	void open();
 
@@ -44,11 +42,12 @@ private:
 	QLabel* m_imageView;
 	QGroupBox* m_filters;
 
-	void setup();
-
+	// Events
 	void dropEvent(QDropEvent* event);
 	void dragEnterEvent(QDragEnterEvent *event);
 
+	// Setup
+	void createActions();
 	QWidget* createSideBar(QWidget* parent = nullptr);
 	QWidget* createImageView(QWidget* parent = nullptr);
 	QWidget* createWidgets(QWidget* parent = nullptr);
