@@ -8,6 +8,7 @@
 #include <QGroupBox>
 #include <QRadioButton>
 #include <QMenuBar>
+#include <QSplitter>
 #include <QFileDialog>
 
 #include <QDir>
@@ -51,22 +52,46 @@ ImageWindow::ImageWindow(QWidget* parent) :
 		if (checked) m_img.makeGrayscale(); else m_img.resetImage();
 	});
 
-	//Filters
-	addFilter("gaussian 3x3", kernels::gaussian3);
-	addFilter("gaussian 5x5", kernels::gaussian5);
-	addFilter("edge (H)",     kernels::edgesH);
-	addFilter("edge (V)",     kernels::edgesV);
-	addFilter("edge 2",       kernels::edges2);
-	addFilter("sharpen",      kernels::sharpen);
-	addFilter("emboss",       kernels::emboss);
+	/*
+		Filters
+	*/
+
+	addFilter("gaussian 3x3",   kernels::gaussian3);
+	addFilter("gaussian 5x5",   kernels::gaussian5);
+	addFilter("edge (sobel H)", kernels::edgesH);
+	addFilter("edge (sobel V)", kernels::edgesV);
+	addFilter("edge 2",         kernels::edges2);
+	addFilter("edge 3",         kernels::edges3);
+	addFilter("sharpen",        kernels::sharpen);
+	addFilter("emboss",         kernels::emboss);
 
 	//Nonlinear filter
 	QAbstractButton* nonlinear = new QRadioButton("non-linear", m_filters);
 	m_filters->layout()->addWidget(nonlinear);
-
 	QObject::connect(nonlinear, &QAbstractButton::toggled, [&](bool checked) {
 		if (checked) m_img.applyNonLinearFilter(); else m_img.resetImage();
 	});
+
+	/*
+		Dynamic range
+	*/
+
+	//m_filters->layout()->addWidget(new QSplitter(m_filters));
+
+	//Threshold
+	QAbstractButton* threshold = new QRadioButton("threshold", m_filters);
+	m_filters->layout()->addWidget(threshold);
+	QObject::connect(threshold, &QAbstractButton::toggled, [&](bool checked) {
+		if (checked) m_img.applyThresholding(); else m_img.resetImage();
+	});
+
+	//Error diffusion dithering
+	QAbstractButton* errdiff = new QRadioButton("error diff. dithering", m_filters);
+	m_filters->layout()->addWidget(errdiff);
+	QObject::connect(errdiff, &QAbstractButton::toggled, [&](bool checked) {
+		if (checked) m_img.applyErrorDithering(); else m_img.resetImage();
+	});
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -86,13 +111,18 @@ QWidget* ImageWindow::createWidgets(QWidget* parent)
 
 QWidget* ImageWindow::createSideBar(QWidget* parent)
 {
-	m_filters = new QGroupBox("Filters:", parent);
+	QWidget* container = new QWidget(parent);
+
+	m_filters = new QGroupBox("Filters:", container);
 	m_filters->setLayout(new QFormLayout(m_filters));
 	m_filters->setMaximumWidth(200);
 	m_filters->setMinimumWidth(200);
 	m_filters->setAlignment(Qt::AlignTop);
 
-	return m_filters;
+	container->setLayout(new QVBoxLayout(container));
+	container->layout()->addWidget(m_filters);
+
+	return container;
 }
 
 QWidget* ImageWindow::createImageView(QWidget* parent)

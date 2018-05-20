@@ -2,6 +2,8 @@
 	Image processing
 */
 
+#include <algorithm>
+
 #include "ImageProcessor.h"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -25,9 +27,9 @@ void ImageProcessor::resetImage()
 
 ImageProcessor& ImageProcessor::apply(const PixelFunction& func)
 {
-	for (int i = 0; i < m_a.width(); i++)
+	for (int j = 0; j < m_a.height(); j++)
 	{
-		for (int j = 0; j < m_a.height(); j++)
+		for (int i = 0; i < m_a.width(); i++)
 		{
 			QPoint coord(i, j);
 
@@ -45,18 +47,16 @@ ImageProcessor& ImageProcessor::apply(const PixelFunction& func)
 
 ImageProcessor& ImageProcessor::makeGrayscale()
 {
-	apply([](auto img, auto coord) {
+	return apply([](auto img, auto coord) {
 		QColor c = qGray(img.pixel(coord));
 		return qRgb(c.blue(), c.blue(), c.blue());
 	});
-
-	return *this;
 }
 
 ImageProcessor& ImageProcessor::applyFilter(const KernelView& kernel)
 {
 	//Apply 3x3 filter kernel to each pixel
-	apply([&](auto img, auto coord) {
+	return apply([&kernel](auto img, auto coord) {
 
 		int newchannels[] = { 0, 0, 0 };
 
@@ -93,13 +93,11 @@ ImageProcessor& ImageProcessor::applyFilter(const KernelView& kernel)
 
 		return QColor(newchannels[0], newchannels[1], newchannels[2]).rgb();
 	});
-
-	return *this;
 }
 
 ImageProcessor& ImageProcessor::applyNonLinearFilter()
 {
-	apply([&](auto img, auto coord) {
+	return apply([](auto img, auto coord) {
 
 		Kernel<3, 3> k;
 
@@ -120,6 +118,59 @@ ImageProcessor& ImageProcessor::applyNonLinearFilter()
 		std::sort(std::begin(k.v), std::end(k.v));
 		return k.v[5];
 	});
+}
+
+ImageProcessor& ImageProcessor::applyThresholding()
+{
+	return apply([](auto img, auto coord) {
+
+		//Make grey
+		uint8_t c = img.pixel(coord);
+		
+		c = (c < 128) ? 0 : 255;
+
+		return qRgb(c, c, c);
+	});
+}
+
+ImageProcessor& ImageProcessor::applyErrorDithering()
+{
+	int error = 0;      //intensity error, difference between original pixel intensity and new intensity
+	QImage& img = m_a;
+	QImage& out = m_b;
+
+	for (int j = 0; j < m_a.height(); j++)
+	{
+		for (int i = 0; i < m_a.width(); i++)
+		{
+			//If row is even move left -> right, otherwise right -> left.
+			const int pos = (j % 2 == 0) ? i : m_a.width() - (i + 1);
+
+			QPoint coords(pos, j);
+
+			int c = qGray(img.pixel(coords));
+			c += error;	
+
+			int o = 0;
+
+			if (c < 128)
+			{
+				o = 0;
+				error = c;
+			}
+			else
+			{
+				o = 255;
+				error = c - 255;
+			}
+
+			out.setPixel(coords, qRgb(o, o, o));
+		}
+	}
+
+	//Swap image buffers
+	m_a.swap(m_b);
+	imageUpdated(QPixmap::fromImage(m_a));
 
 	return *this;
 }

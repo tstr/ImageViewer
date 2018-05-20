@@ -10,6 +10,8 @@
 #include "Utils.h"
 #include "FilterKernels.h"
 
+class ImageAccessor;
+
 class ImageProcessor : public QObject
 {
 	Q_OBJECT
@@ -38,6 +40,12 @@ public:
 
 	//Apply a non linear filter operation to the image
 	ImageProcessor& applyNonLinearFilter();
+
+	//Apply thresholding
+	ImageProcessor& applyThresholding();
+
+	//Apply error diffusion dithering
+	ImageProcessor& applyErrorDithering();
 
 public slots:
 
