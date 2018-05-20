@@ -12,6 +12,7 @@
 
 class QLabel;
 class QGroupBox;
+class ImageWidget;
 
 class ImageWindow : public QMainWindow
 {
@@ -39,7 +40,7 @@ private:
 
 	ImageProcessor m_img;
 
-	QLabel* m_imageView;
+	ImageWidget* m_imageView;
 	QGroupBox* m_filters;
 
 	// Events

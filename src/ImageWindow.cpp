@@ -17,6 +17,7 @@
 
 #include <QDebug>
 
+#include "ImageWidget.h"
 #include "ImageWindow.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -31,7 +32,7 @@ ImageWindow::ImageWindow(QWidget* parent) :
 	createActions();
 
 	//Image update event
-	QObject::connect(&m_img, &ImageProcessor::imageUpdated, m_imageView, &QLabel::setPixmap);
+	QObject::connect(&m_img, &ImageProcessor::imageUpdated, m_imageView, &ImageWidget::setPixmap);
 
 	/*
 		Setup image operations
@@ -96,8 +97,7 @@ QWidget* ImageWindow::createSideBar(QWidget* parent)
 
 QWidget* ImageWindow::createImageView(QWidget* parent)
 {
-	m_imageView = new QLabel(parent);
-	m_imageView->setText("empty");
+	m_imageView = new ImageWidget(parent);
 	return m_imageView;
 }
 
