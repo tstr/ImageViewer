@@ -12,6 +12,14 @@
 
 class ImageAccessor;
 
+enum class Dithering
+{
+	ERROR_DIFFUSION = 1,
+	FLOYD_STEINBERG = 2,
+	PATTERN         = 3,
+	ORDERED         = 4,
+};
+
 class ImageProcessor : public QObject
 {
 	Q_OBJECT
@@ -45,7 +53,7 @@ public:
 	ImageProcessor& applyThresholding();
 
 	//Apply error diffusion dithering
-	ImageProcessor& applyErrorDithering();
+	ImageProcessor& applyDithering(Dithering mode);
 
 public slots:
 

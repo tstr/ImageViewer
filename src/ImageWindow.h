@@ -22,8 +22,6 @@ public:
 
 	explicit ImageWindow(QWidget* parent = nullptr);
 
-	QAbstractButton* addFilter(const QString& name, const KernelView& kernel);
-
 	const ImageProcessor& imgproc() const { return m_img; }
 
 public slots:
@@ -46,6 +44,10 @@ private:
 	// Events
 	void dropEvent(QDropEvent* event);
 	void dragEnterEvent(QDragEnterEvent *event);
+
+
+	QAbstractButton* addFilter(const QString& name, const KernelView& kernel);
+	QAbstractButton* addHalftoneFilter(const QString& name, Dithering mode);
 
 	// Setup
 	void createActions();

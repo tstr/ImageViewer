@@ -85,13 +85,10 @@ ImageWindow::ImageWindow(QWidget* parent) :
 		if (checked) m_img.applyThresholding(); else m_img.resetImage();
 	});
 
-	//Error diffusion dithering
-	QAbstractButton* errdiff = new QRadioButton("error diff. dithering", m_filters);
-	m_filters->layout()->addWidget(errdiff);
-	QObject::connect(errdiff, &QAbstractButton::toggled, [&](bool checked) {
-		if (checked) m_img.applyErrorDithering(); else m_img.resetImage();
-	});
-
+	addHalftoneFilter("error diffusion dither", Dithering::ERROR_DIFFUSION);
+	addHalftoneFilter("floyd steinberg dither", Dithering::FLOYD_STEINBERG);
+	addHalftoneFilter("ordered dither", Dithering::ORDERED);
+	addHalftoneFilter("pattern dither", Dithering::PATTERN);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -159,6 +156,16 @@ QAbstractButton* ImageWindow::addFilter(const QString& name, const KernelView& k
 	QAbstractButton* toggle = new QRadioButton(name, m_filters);
 	m_filters->layout()->addWidget(toggle);
 	QObject::connect(toggle, &QAbstractButton::toggled, [this, kernel](bool checked) { if (checked) m_img.applyFilter(kernel); else m_img.resetImage(); });
+	return toggle;
+}
+
+QAbstractButton* ImageWindow::addHalftoneFilter(const QString& name, Dithering mode)
+{
+	QAbstractButton* toggle = new QRadioButton(name, m_filters);
+	m_filters->layout()->addWidget(toggle);
+	QObject::connect(toggle, &QAbstractButton::toggled, [this, mode](bool checked) {
+		if (checked) m_img.applyDithering(mode); else m_img.resetImage();
+	});
 	return toggle;
 }
 

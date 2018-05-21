@@ -133,44 +133,102 @@ ImageProcessor& ImageProcessor::applyThresholding()
 	});
 }
 
-ImageProcessor& ImageProcessor::applyErrorDithering()
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void addError(QImage& img, const QPoint& coords, int error)
 {
-	int error = 0;      //intensity error, difference between original pixel intensity and new intensity
+	int c = QColor(img.pixel(coords)).blue();
+	c += error;
+	img.setPixel(coords, c);
+}
+
+ImageProcessor& ImageProcessor::applyDithering(Dithering mode)
+{
+	//int error = 0;      //intensity error, difference between original pixel intensity and new intensity
 	QImage& img = m_a;
 	QImage& out = m_b;
 
-	for (int j = 0; j < m_a.height(); j++)
+	apply([](auto img, auto point) {
+		return qGray(img.pixel(point));
+	});
+
+	const int threshold = 128;
+	const int maxIntensity = 255;
+
+	switch (mode)
 	{
-		for (int i = 0; i < m_a.width(); i++)
+		case Dithering::ERROR_DIFFUSION:
 		{
-			//If row is even move left -> right, otherwise right -> left.
-			const int pos = (j % 2 == 0) ? i : m_a.width() - (i + 1);
+			int error = 0;
 
-			QPoint coords(pos, j);
-
-			int c = qGray(img.pixel(coords));
-			c += error;	
-
-			int o = 0;
-
-			if (c < 128)
+			for (int j = 0; j < m_a.height(); j++)
 			{
-				o = 0;
-				error = c;
-			}
-			else
-			{
-				o = 255;
-				error = c - 255;
+				for (int i = 0; i < m_a.width(); i++)
+				{
+					//If row is even move left -> right, otherwise right -> left.
+					const int pos = (j % 2 == 0) ? i : m_a.width() - (i + 1);
+
+					//QPoint coords(pos, j);
+					QPoint coords(i, j);
+
+					int c = QColor(img.pixel(coords)).blue();
+					c += error;
+					int o = (c < threshold) ? 0 : maxIntensity;
+					error = c - o;
+				
+					out.setPixel(coords, qRgb(o, o, o));
+				}
 			}
 
-			out.setPixel(coords, qRgb(o, o, o));
+			break;
+		}
+
+		case Dithering::FLOYD_STEINBERG:
+		{
+			for (int j = 0; j < m_a.height(); j++)
+			{
+				for (int i = 0; i < m_a.width(); i++)
+				{
+					//QPoint coords(pos, j);
+					QPoint coords(i, j);
+
+					int c = QColor(img.pixel(coords)).blue();
+					int o = (c < threshold) ? 0 : maxIntensity;
+					int error = c - o;
+
+					/*
+						---|x|a|--
+						-|b|g|d|--
+						----------
+
+						Pass error onto neighbouring pixels
+					*/
+					addError(img, coords + QPoint(+1, 0), error * 7 / 16); //alpha
+					addError(img, coords + QPoint(-1, 1), error * 3 / 16); //beta
+					addError(img, coords + QPoint(+0, 1), error * 5 / 16); //gamma
+					addError(img, coords + QPoint(+1, 1), error * 1 / 16); //delta
+
+					out.setPixel(coords, qRgb(o, o, o));
+				}
+			}
+
+			break;
+		}
+
+		case Dithering::ORDERED:
+		{
+			break;
+		}
+
+		case Dithering::PATTERN:
+		{
+			break;
 		}
 	}
 
 	//Swap image buffers
-	m_a.swap(m_b);
-	imageUpdated(QPixmap::fromImage(m_a));
+	img.swap(out);
+	imageUpdated(QPixmap::fromImage(img));
 
 	return *this;
 }
