@@ -3,6 +3,7 @@
 */
 
 #include <QLabel>
+#include <QSlider>
 #include <QHBoxLayout>
 #include <QFormLayout>
 #include <QGroupBox>
@@ -10,6 +11,7 @@
 #include <QMenuBar>
 #include <QSplitter>
 #include <QFileDialog>
+#include <QDockWidget>
 
 #include <QDir>
 #include <QDragEnterEvent>
@@ -26,6 +28,9 @@
 ImageWindow::ImageWindow(QWidget* parent) :
 	QMainWindow(parent)
 {
+	m_fileMenu = menuBar()->addMenu(tr("&File"));
+	m_viewMenu = menuBar()->addMenu(tr("&View"));
+
 	//Setup widgets
 	this->setCentralWidget(createWidgets(this));
 
@@ -98,26 +103,52 @@ ImageWindow::ImageWindow(QWidget* parent) :
 QWidget* ImageWindow::createWidgets(QWidget* parent)
 {
 	//Create widgets
-	QWidget* center = new QWidget(parent);
-	center->setLayout(new QHBoxLayout(center));
-	center->layout()->addWidget(createSideBar(center));
-	center->layout()->addWidget(createImageView(center));
+	QDockWidget* dock = new QDockWidget(tr("Tools"), parent);
+	dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
-	return center;
+	dock->setWidget(createTools(this));
+	addDockWidget(Qt::LeftDockWidgetArea, dock);
+
+	m_viewMenu->addAction(dock->toggleViewAction());
+
+	return createImageView(this);
 }
 
-QWidget* ImageWindow::createSideBar(QWidget* parent)
+QWidget* ImageWindow::createTools(QWidget* parent)
 {
 	QWidget* container = new QWidget(parent);
+	container->setMinimumWidth(200);
 
 	m_filters = new QGroupBox("Filters:", container);
 	m_filters->setLayout(new QFormLayout(m_filters));
-	m_filters->setMaximumWidth(200);
-	m_filters->setMinimumWidth(200);
 	m_filters->setAlignment(Qt::AlignTop);
 
+	QGroupBox* gamma = new QGroupBox("Gamma:", container);
+	gamma->setLayout(new QVBoxLayout(gamma));
+	gamma->setAlignment(Qt::AlignTop);
+
+	m_gammaSlider = new QSlider(Qt::Horizontal, gamma);
+
+	m_gammaSlider->setMaximum(400);
+	m_gammaSlider->setValue(100);
+	m_gammaSlider->setMinimum(1);
+
+	QLabel* gammaLabel = new QLabel("value = 1", gamma);
+
+	gamma->layout()->setAlignment(Qt::AlignTop);
+	gamma->layout()->addWidget(m_gammaSlider);
+	gamma->layout()->addWidget(gammaLabel);
+
+	connect(m_gammaSlider, &QSlider::valueChanged, [this, gammaLabel](int value) {
+		m_img.resetImage();
+		m_img.setGamma((float)value / 100.0f);
+		gammaLabel->setText(QString::fromStdString("value = " + std::to_string((float)value / 100.0f)));
+	});
+
 	container->setLayout(new QVBoxLayout(container));
+	container->layout()->setAlignment(Qt::AlignLeft);
 	container->layout()->addWidget(m_filters);
+	container->layout()->addWidget(gamma);
 
 	return container;
 }
@@ -131,20 +162,18 @@ QWidget* ImageWindow::createImageView(QWidget* parent)
 void ImageWindow::createActions()
 {
 	setAcceptDrops(true);
-
-	QMenu* fileMenu = menuBar()->addMenu(tr("&File"));
-
-	QAction* saveAction = new QAction(tr("&Save"), fileMenu);
+	
+	QAction* saveAction = new QAction(tr("&Save"), m_fileMenu);
 	saveAction->setShortcuts(QKeySequence::SaveAs);
 	saveAction->setStatusTip("Save image");
 	connect(saveAction, &QAction::triggered, this, &ImageWindow::saveAs);
-	fileMenu->addAction(saveAction);
+	m_fileMenu->addAction(saveAction);
 
-	QAction *openAction = new QAction(tr("&Open..."), fileMenu);
+	QAction *openAction = new QAction(tr("&Open..."), m_fileMenu);
 	openAction->setShortcuts(QKeySequence::Open);
 	openAction->setStatusTip(tr("Open an image"));
 	connect(openAction, &QAction::triggered, this, &ImageWindow::open);
-	fileMenu->addAction(openAction);
+	m_fileMenu->addAction(openAction);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////

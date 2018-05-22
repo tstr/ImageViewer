@@ -11,7 +11,9 @@
 #include "ImageProcessor.h"
 
 class QLabel;
+class QSlider;
 class QGroupBox;
+class QMenu;
 class ImageWidget;
 
 class ImageWindow : public QMainWindow
@@ -40,6 +42,10 @@ private:
 
 	ImageWidget* m_imageView;
 	QGroupBox* m_filters;
+	QSlider* m_gammaSlider;
+
+	QMenu* m_fileMenu;
+	QMenu* m_viewMenu;
 
 	// Events
 	void dropEvent(QDropEvent* event);
@@ -51,7 +57,7 @@ private:
 
 	// Setup
 	void createActions();
-	QWidget* createSideBar(QWidget* parent = nullptr);
+	QWidget* createTools(QWidget* parent = nullptr);
 	QWidget* createImageView(QWidget* parent = nullptr);
 	QWidget* createWidgets(QWidget* parent = nullptr);
 };

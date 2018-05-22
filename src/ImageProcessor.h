@@ -43,6 +43,9 @@ public:
 	//Apply a gray scale filter
 	ImageProcessor& makeGrayscale();
 
+	//Apply gamma correction
+	ImageProcessor& setGamma(float gamma);
+
 	//Apply a filter kernel to the image
 	ImageProcessor& applyFilter(const KernelView& kernel);
 

@@ -53,6 +53,23 @@ ImageProcessor& ImageProcessor::makeGrayscale()
 	});
 }
 
+
+int setgamma(int value, float gamma)
+{
+	return 255 * powf((float)value / 255, 1.0f / gamma);
+}
+
+ImageProcessor& ImageProcessor::setGamma(float gamma)
+{
+	return apply([gamma](auto img, auto coord) {
+		QColor c(img.pixel(coord));
+		c.setRed(setgamma(c.red(), gamma));
+		c.setBlue(setgamma(c.blue(), gamma));
+		c.setGreen(setgamma(c.green(), gamma));
+		return c.rgb();
+	});
+}
+
 ImageProcessor& ImageProcessor::applyFilter(const KernelView& kernel)
 {
 	//Apply 3x3 filter kernel to each pixel
@@ -150,13 +167,10 @@ void addError(QImage& img, const QPoint& coords, int error)
 
 ImageProcessor& ImageProcessor::applyDithering(Dithering mode)
 {
-	//int error = 0;      //intensity error, difference between original pixel intensity and new intensity
 	QImage& img = m_a;
 	QImage& out = m_b;
 	
-	apply([](auto img, auto point) {
-		return qGray(img.pixel(point));
-	});
+	makeGrayscale();
 
 	const int threshold = 128;
 	const int maxIntensity = 255;
