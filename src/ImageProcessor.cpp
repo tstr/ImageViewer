@@ -111,7 +111,7 @@ ImageProcessor& ImageProcessor::applyNonLinearFilter()
 				newcoord.setY(std::max(0, std::min(img.size().height() - 1, newcoord.y())));
 
 				//Read input image
-				k.v[x + y * 3] = img.pixel(newcoord);
+				k[y][x] = img.pixel(newcoord);
 			}
 		}
 
@@ -137,6 +137,12 @@ ImageProcessor& ImageProcessor::applyThresholding()
 
 void addError(QImage& img, const QPoint& coords, int error)
 {
+	//Check if pixel is inside the image bounds
+	if (coords.x() >= img.size().width() || coords.x() <= 0)
+		return;
+	if (coords.y() >= img.size().height() || coords.y() <= 0)
+		return;
+
 	int c = QColor(img.pixel(coords)).blue();
 	c += error;
 	img.setPixel(coords, c);
@@ -147,7 +153,7 @@ ImageProcessor& ImageProcessor::applyDithering(Dithering mode)
 	//int error = 0;      //intensity error, difference between original pixel intensity and new intensity
 	QImage& img = m_a;
 	QImage& out = m_b;
-
+	
 	apply([](auto img, auto point) {
 		return qGray(img.pixel(point));
 	});
@@ -155,10 +161,19 @@ ImageProcessor& ImageProcessor::applyDithering(Dithering mode)
 	const int threshold = 128;
 	const int maxIntensity = 255;
 
+	//dithering template pattern matrix
+	const Kernel<4, 4> pattern = {
+		1,  9,  3,  11,
+		13, 5,  15, 7,
+		4,  12, 2,  10,
+		16, 8,  14, 6
+	};
+
 	switch (mode)
 	{
 		case Dithering::ERROR_DIFFUSION:
 		{
+			//intensity error
 			int error = 0;
 
 			for (int j = 0; j < m_a.height(); j++)
@@ -168,15 +183,15 @@ ImageProcessor& ImageProcessor::applyDithering(Dithering mode)
 					//If row is even move left -> right, otherwise right -> left.
 					const int pos = (j % 2 == 0) ? i : m_a.width() - (i + 1);
 
-					//QPoint coords(pos, j);
-					QPoint coords(i, j);
+					QPoint coords(pos, j);
+					//QPoint coords(i, j);
 
-					int c = QColor(img.pixel(coords)).blue();
-					c += error;
-					int o = (c < threshold) ? 0 : maxIntensity;
-					error = c - o;
+					int curp = QColor(img.pixel(coords)).blue(); //current pixel value
+					curp += error;
+					int newp = (curp < threshold) ? 0 : maxIntensity; //thresholded pixel value
+					error = curp - newp; //pass error onto next pixel
 				
-					out.setPixel(coords, qRgb(o, o, o));
+					out.setPixel(coords, qRgb(newp, newp, newp));
 				}
 			}
 
@@ -192,23 +207,23 @@ ImageProcessor& ImageProcessor::applyDithering(Dithering mode)
 					//QPoint coords(pos, j);
 					QPoint coords(i, j);
 
-					int c = QColor(img.pixel(coords)).blue();
-					int o = (c < threshold) ? 0 : maxIntensity;
-					int error = c - o;
+					int curp = QColor(img.pixel(coords)).blue();       //current pixel value
+					int newp = (curp < threshold) ? 0 : maxIntensity;  //thresholded pixel value
+					int error = curp - newp;
 
 					/*
 						---|x|a|--
 						-|b|g|d|--
 						----------
 
-						Pass error onto neighbouring pixels
+						Pass error of current pixel onto neighbouring pixels
 					*/
-					addError(img, coords + QPoint(+1, 0), error * 7 / 16); //alpha
-					addError(img, coords + QPoint(-1, 1), error * 3 / 16); //beta
-					addError(img, coords + QPoint(+0, 1), error * 5 / 16); //gamma
-					addError(img, coords + QPoint(+1, 1), error * 1 / 16); //delta
+					addError(img, coords + QPoint(+1, 0), (int)(error * 7.0f / 16)); //alpha
+					addError(img, coords + QPoint(-1, 1), (int)(error * 3.0f / 16)); //beta
+					addError(img, coords + QPoint(+0, 1), (int)(error * 5.0f / 16)); //gamma
+					addError(img, coords + QPoint(+1, 1), (int)(error * 1.0f / 16)); //delta
 
-					out.setPixel(coords, qRgb(o, o, o));
+					out.setPixel(coords, qRgb(newp, newp, newp));
 				}
 			}
 
@@ -217,12 +232,66 @@ ImageProcessor& ImageProcessor::applyDithering(Dithering mode)
 
 		case Dithering::ORDERED:
 		{
+			const int n = 4;
+
+			for (int j = 0; j < m_a.height(); j++)
+			{
+				for (int i = 0; i < m_a.width(); i++)
+				{
+					QPoint coords(i, j);
+
+					int curp = QColor(img.pixel(coords)).blue();       //current pixel value
+
+					//Normalized intensity of pixel 
+					float intensity = (float)curp / 255;
+					//Compute pattern number
+					int p = std::min((int)(intensity * (n*n + 1)), n*n);
+
+					//Compare pattern number against corresponding number in template
+					int newp = (p < pattern[j % n][i % n]) ? 0 : maxIntensity;
+
+					out.setPixel(coords, qRgb(newp, newp, newp));
+				}
+			}
+
 			break;
 		}
 
 		case Dithering::PATTERN:
 		{
-			break;
+			const int n = 4;
+			const int area = n * n;
+
+			//Foreach n*n region of pixels
+			for (int j = 0; j < m_a.height(); j += n)
+			{
+				for (int i = 0; i < m_a.width(); i += n)
+				{
+					int totalIntensity = 0;
+
+					//Get total intensity
+					for (int y = 0; y < n; y++)
+						for (int x = 0; x < n; x++)
+							totalIntensity += QColor(img.pixel(QPoint(i + x, j + y))).blue();
+
+					//Normalized average intensity of pixel region 
+					float normIntensity = (float)(totalIntensity / area) / 255.0f;
+					//Compute pattern number
+					int p = std::min((int)(normIntensity * (area + 1)), area);
+
+					//Fill in pixel region
+					for (int y = 0; y < n; y++)
+						for (int x = 0; x < n; x++)
+						{
+							QPoint coords(i + x, j + y);
+
+							//Threshold each pixel based on pattern matrix
+							int newp = (p < pattern[y][x]) ? 0 : maxIntensity;
+
+							out.setPixel(coords, qRgb(newp, newp, newp));
+						}
+				}
+			}
 		}
 	}
 

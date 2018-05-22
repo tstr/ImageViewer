@@ -10,10 +10,10 @@
 template<uint n, uint m>
 struct Kernel
 {
-	static_assert(n % 2 == 1, "Kernel must have odd dimensions");
-	static_assert(m % 2 == 1, "Kernel must have odd dimensions");
-
 	int v[n * m];
+
+	const int* operator[](size_t idx) const { return v + (m * idx); }
+	int* operator[](size_t idx) { return v + (m * idx); }
 };
 
 struct KernelView
@@ -40,10 +40,7 @@ struct KernelView
 		m(other.m)
 	{}
 
-	const int* operator[](size_t idx) const
-	{
-		return v + (m * idx);
-	}
+	const int* operator[](size_t idx) const { return v + (m * idx); }
 };
 
 /*
