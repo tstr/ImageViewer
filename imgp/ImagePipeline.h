@@ -20,13 +20,13 @@ enum class Dithering
 	ORDERED         = 4,
 };
 
-class ImageProcessor : public QObject
+class ImagePipeline : public QObject
 {
 	Q_OBJECT
 
 public:
 
-	explicit ImageProcessor(QObject* parent = nullptr) : QObject(parent) {}
+	explicit ImagePipeline(QObject* parent = nullptr) : QObject(parent) {}
 
 	//Load the given image
 	void load(const QImage& img);
@@ -38,25 +38,25 @@ public:
 	using PixelFunction = FunctionRef<QRgb(const QImage&, const QPoint&)>;
 
 	//Apply a function to every pixel of an image:
-	ImageProcessor& apply(const PixelFunction& func);
+	ImagePipeline& apply(const PixelFunction& func);
 
 	//Apply a gray scale filter
-	ImageProcessor& makeGrayscale();
+	ImagePipeline& makeGrayscale();
 
 	//Apply gamma correction
-	ImageProcessor& setGamma(float gamma);
+	ImagePipeline& setGamma(float gamma);
 
 	//Apply a filter kernel to the image
-	ImageProcessor& applyFilter(const KernelView& kernel);
+	ImagePipeline& applyFilter(const KernelView& kernel);
 
 	//Apply a non linear filter operation to the image
-	ImageProcessor& applyNonLinearFilter();
+	ImagePipeline& applyNonLinearFilter();
 
 	//Apply thresholding
-	ImageProcessor& applyThresholding();
+	ImagePipeline& applyThresholding();
 
 	//Apply error diffusion dithering
-	ImageProcessor& applyDithering(Dithering mode);
+	ImagePipeline& applyDithering(Dithering mode);
 
 public slots:
 

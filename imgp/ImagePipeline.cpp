@@ -4,11 +4,11 @@
 
 #include <algorithm>
 
-#include "ImageProcessor.h"
+#include "ImagePipeline.h"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ImageProcessor::load(const QImage& img)
+void ImagePipeline::load(const QImage& img)
 {
 	m_src = img;
 	m_a = m_src;
@@ -17,7 +17,7 @@ void ImageProcessor::load(const QImage& img)
 	imageUpdated(QPixmap::fromImage(m_a));
 }
 
-void ImageProcessor::resetImage()
+void ImagePipeline::resetImage()
 {
 	m_a = m_src;
 	imageUpdated(QPixmap::fromImage(m_a));
@@ -25,7 +25,7 @@ void ImageProcessor::resetImage()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-ImageProcessor& ImageProcessor::apply(const PixelFunction& func)
+ImagePipeline& ImagePipeline::apply(const PixelFunction& func)
 {
 	for (int j = 0; j < m_a.height(); j++)
 	{
@@ -33,7 +33,7 @@ ImageProcessor& ImageProcessor::apply(const PixelFunction& func)
 		{
 			QPoint coord(i, j);
 
-			m_b.setPixel(coord, func((const QImage&)m_a, coord));;
+			m_b.setPixel(coord, func((const QImage&)m_a, coord));
 		}
 	}
 
@@ -45,7 +45,7 @@ ImageProcessor& ImageProcessor::apply(const PixelFunction& func)
 	return *this;
 }
 
-ImageProcessor& ImageProcessor::makeGrayscale()
+ImagePipeline& ImagePipeline::makeGrayscale()
 {
 	return apply([](auto img, auto coord) {
 		QColor c = qGray(img.pixel(coord));
@@ -59,7 +59,7 @@ int setgamma(int value, float gamma)
 	return 255 * powf((float)value / 255, 1.0f / gamma);
 }
 
-ImageProcessor& ImageProcessor::setGamma(float gamma)
+ImagePipeline& ImagePipeline::setGamma(float gamma)
 {
 	return apply([gamma](auto img, auto coord) {
 		QColor c(img.pixel(coord));
@@ -70,7 +70,7 @@ ImageProcessor& ImageProcessor::setGamma(float gamma)
 	});
 }
 
-ImageProcessor& ImageProcessor::applyFilter(const KernelView& kernel)
+ImagePipeline& ImagePipeline::applyFilter(const KernelView& kernel)
 {
 	//Apply 3x3 filter kernel to each pixel
 	return apply([&kernel](auto img, auto coord) {
@@ -112,7 +112,7 @@ ImageProcessor& ImageProcessor::applyFilter(const KernelView& kernel)
 	});
 }
 
-ImageProcessor& ImageProcessor::applyNonLinearFilter()
+ImagePipeline& ImagePipeline::applyNonLinearFilter()
 {
 	return apply([](auto img, auto coord) {
 
@@ -137,7 +137,7 @@ ImageProcessor& ImageProcessor::applyNonLinearFilter()
 	});
 }
 
-ImageProcessor& ImageProcessor::applyThresholding()
+ImagePipeline& ImagePipeline::applyThresholding()
 {
 	return apply([](auto img, auto coord) {
 
@@ -165,7 +165,7 @@ void addError(QImage& img, const QPoint& coords, int error)
 	img.setPixel(coords, c);
 }
 
-ImageProcessor& ImageProcessor::applyDithering(Dithering mode)
+ImagePipeline& ImagePipeline::applyDithering(Dithering mode)
 {
 	QImage& img = m_a;
 	QImage& out = m_b;

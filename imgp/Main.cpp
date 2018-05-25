@@ -5,7 +5,6 @@
 #include <QApplication>
 
 #include "ImageWindow.h"
-#include "ImageProcessor.h"
 
 int main(int argc, char** argv)
 {

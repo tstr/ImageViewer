@@ -38,7 +38,7 @@ ImageWindow::ImageWindow(QWidget* parent) :
 	createActions();
 
 	//Image update event
-	QObject::connect(&m_img, &ImageProcessor::imageUpdated, m_imageView, &ImageWidget::setPixmap);
+	QObject::connect(&m_img, &ImagePipeline::imageUpdated, m_imageView, &ImageWidget::setPixmap);
 
 	/*
 		Setup image operations

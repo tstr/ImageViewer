@@ -8,7 +8,7 @@
 #include <QImage>
 #include <QAbstractButton>
 
-#include "ImageProcessor.h"
+#include "ImagePipeline.h"
 
 class QLabel;
 class QSlider;
@@ -24,7 +24,7 @@ public:
 
 	explicit ImageWindow(QWidget* parent = nullptr);
 
-	const ImageProcessor& imgproc() const { return m_img; }
+	const ImagePipeline& imgproc() const { return m_img; }
 
 public slots:
 
@@ -38,7 +38,7 @@ private slots:
 
 private:
 
-	ImageProcessor m_img;
+	ImagePipeline m_img;
 
 	ImageWidget* m_imageView;
 	QGroupBox* m_filters;
